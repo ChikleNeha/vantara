@@ -1,0 +1,73 @@
+# All paths, thresholds and hyperparameters live here (PRD section 13).
+seed: 42
+
+paths:
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+  artifacts_dir: models_artifacts
+  docs_dir: docs
+  db_path: data/cbp.sqlite
+
+data:
+  raw_file: online_retail_II.xlsx
+  # auto: use raw file if present, else ucimlrepo, else synthetic demo data
+  # file | ucimlrepo | synthetic force one source
+  source: auto
+  synthetic:
+    n_customers: 3000
+    start: "2009-12-01"
+    end: "2011-12-09"
+  admin_stock_codes: [POST, DOT, M, BANK CHARGES, AMAZONFEE, ADJUST, ADJUST2, S, B, CRUK, D, TEST001, TEST002, PADS]
+  max_valid_quantity: 20000      # |quantity| above this is treated as a data-entry error
+  max_valid_price: 10000
+  validation:
+    max_null_rate_description: 0.05
+    max_null_rate_price: 0.0
+    min_rows: 1000
+
+features:
+  churn_horizon_days: 90         # churn = no purchase in the 90 days after the cutoff
+  trend_window_months: 12
+  discount_threshold: 0.90       # a line is "discounted" if price < 90% of the SKU median
+  min_orders: 1
+  vif_threshold: 10.0            # iteratively drop the most collinear feature above this VIF
+
+split:
+  train: 0.70
+  val: 0.15
+  test: 0.15
+  target_recall: 0.70            # threshold search keeps recall at or above this
+
+models:
+  cv_folds: 5
+  search_iter: 6
+  country_levels: 6
+  top_products_for_recommender: 400
+
+deep_learning:
+  epochs: 80
+  batch_size: 64
+  patience: 8
+  lstm_max_len: 12
+  autoencoder_percentile: 99
+
+segmentation:
+  k_min: 3
+  k_max: 8
+
+ollama:
+  base_url: "http://localhost:11434"
+  model: "llama3.2"
+  timeout_seconds: 60
+
+forecast:
+  months_ahead: 6
+
+database:
+  store_transactions: true       # store cleaned lines in SQLite for customer history views
+
+risk:
+  high_cut: 0.75                 # churn probability at/above this is "high" risk (never below the model threshold)
+  high_value_quantile: 0.80      # top 20% by average 90-day spend are "high" value
+  mid_value_quantile: 0.50

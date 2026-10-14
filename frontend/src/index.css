@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  body { @apply bg-paper font-sans text-ink-900 antialiased; }
+  h1, h2, h3 { @apply font-display tracking-tight; }
+  ::selection { background: #f0d9a8; }
+}
+
+@layer components {
+  .card { @apply rounded-xl border border-paper-line bg-paper-card shadow-card; }
+  .label { @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-500; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-ink-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-paper-line bg-white px-3 py-2 text-sm font-medium text-ink-900 transition hover:bg-paper; }
+  .field { @apply w-full rounded-lg border border-paper-line bg-white px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft; }
+  .th { @apply border-b border-paper-line px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-500; }
+  .td { @apply border-b border-paper-line/70 px-3 py-2.5 text-sm; }
+}
+
+.num { font-variant-numeric: tabular-nums; }
+
+@media print {
+  aside, .no-print { display: none !important; }
+  main { padding: 0 !important; }
+  body { background: white; }
+}

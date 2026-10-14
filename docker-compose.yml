@@ -1,0 +1,28 @@
+# One command: docker compose up --build
+#   1. `train` runs the pipeline once (skipped when artifacts already exist)
+#   2. `api` serves predictions on :8000
+#   3. `web` serves the dashboard on :8080
+# Ollama runs on the host (https://ollama.com); the API reaches it via host.docker.internal.
+services:
+  train:
+    build: { context: ., dockerfile: Dockerfile.api, target: train }
+    command: sh -c "[ -f models_artifacts/meta.json ] && echo 'Artifacts exist, skipping training' || python -m src.pipeline"
+    environment: [DATA_SOURCE=${DATA_SOURCE:-auto}]
+    volumes: [./data:/app/data, ./models_artifacts:/app/models_artifacts, ./docs:/app/docs]
+
+  api:
+    build: { context: ., dockerfile: Dockerfile.api, target: serve }
+    depends_on: { train: { condition: service_completed_successfully } }
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CORS_ORIGINS=http://localhost:8080
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    ports: ["8000:8000"]
+    volumes: [./data:/app/data, ./models_artifacts:/app/models_artifacts]
+
+  web:
+    build: { context: ., dockerfile: Dockerfile.frontend }
+    depends_on: [api]
+    ports: ["8080:80"]

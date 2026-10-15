@@ -1,7 +1,7 @@
 # Vantara Customer Behaviour Prediction Platform
 
 Predicts which customers are about to stop buying, how much they are worth, and why, then puts it in a dashboard a marketing team can use.
-Built from the PRD (`vantara_doc.docx`) on **React + TailwindCSS + FastAPI + SQLite + Ollama**.
+Built on **React + TailwindCSS + FastAPI + SQLite + Ollama**.
 
 | Layer | What it does |
 |---|---|
@@ -22,7 +22,7 @@ uvicorn api.main:app --port 8000    # API + docs at http://localhost:8000/docs
 cd frontend && npm install && npm run dev    # http://localhost:5173
 
 # 3. Optional: plain-language narratives and the Q&A page
-ollama pull llama3.2                # or set OLLAMA_MODEL in .env
+ollama pull llama3.2:latest                # or set OLLAMA_MODEL in .env
 ```
 
 Or everything with Docker: `docker compose up --build` then open http://localhost:8080 (Ollama stays on the host).

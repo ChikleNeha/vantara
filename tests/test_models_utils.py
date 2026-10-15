@@ -135,3 +135,19 @@ def test_ollama_narrate_status_and_failure(monkeypatch):
         else:
             with pytest.raises(OllamaUnavailable):
                 c.narrate({"a": 1})
+
+
+def test_lime_is_optional(monkeypatch):
+    """Without LIME installed the explainer still gives SHAP drivers and a clear message for LIME."""
+    import xgboost as xgb
+
+    from src.explainability import explain as ex
+
+    monkeypatch.setattr(ex, "LimeTabularExplainer", None)
+    rng = np.random.default_rng(0)
+    X = pd.DataFrame(rng.normal(size=(200, 3)), columns=["a", "b", "c"])
+    model = xgb.XGBClassifier(n_estimators=10, max_depth=2).fit(X, (X["a"] > 0).astype(int))
+    e = ex.ChurnExplainer(model, list(X.columns), X)
+    assert e.lime is None and e.shap_values(X.head(2)).shape == (2, 3)
+    with pytest.raises(RuntimeError, match="pip install lime"):
+        e.lime_drivers(X.iloc[0])

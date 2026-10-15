@@ -104,7 +104,10 @@ def customer_explain(
         "method": method,
     }
     if method == "lime":
-        out["lime"] = st.bundle.explainer.lime_drivers(feats.loc[customer_id])
+        try:
+            out["lime"] = st.bundle.explainer.lime_drivers(feats.loc[customer_id])
+        except RuntimeError as exc:
+            raise HTTPException(503, str(exc)) from exc
     if narrative == "llm":
         out["narrative"], out["narrative_source"] = llm_narrative(st, customer_id, scored, exp)
     return out

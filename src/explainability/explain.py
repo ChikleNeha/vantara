@@ -12,11 +12,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
-from lime.lime_tabular import LimeTabularExplainer
 from sklearn.inspection import partial_dependence
 
 from src.features.build import EXPLAIN_NAMES
 from src.utils.logging import get_logger
+
+try:  # LIME is only a cross-check for SHAP, so a missing install must not break training or serving
+    from lime.lime_tabular import LimeTabularExplainer
+except ImportError:  # pragma: no cover - exercised by test_lime_is_optional
+    LimeTabularExplainer = None
 
 log = get_logger(__name__)
 
@@ -74,7 +78,7 @@ class ChurnExplainer:
         self.model, self.columns = model, columns
         self.tree = shap.TreeExplainer(model)
         self.lime = None
-        if X_train is not None:
+        if X_train is not None and LimeTabularExplainer is not None:
             self.lime = LimeTabularExplainer(
                 X_train[columns].to_numpy(),
                 feature_names=columns,
@@ -111,7 +115,7 @@ class ChurnExplainer:
     def lime_drivers(self, row: pd.Series, k: int = 5) -> list[dict[str, Any]]:
         """LIME local explanation as a cross-check on SHAP (slower; used on demand)."""
         if self.lime is None:
-            raise RuntimeError("LIME explainer was not built (no training data supplied)")
+            raise RuntimeError("LIME is unavailable. Install it in this environment with: python -m pip install lime")
         exp = self.lime.explain_instance(
             row[self.columns].to_numpy(dtype=float),
             lambda a: self.model.predict_proba(pd.DataFrame(a, columns=self.columns)),

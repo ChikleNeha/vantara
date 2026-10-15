@@ -172,11 +172,14 @@ def run_pipeline(cfg: Config) -> dict[str, Any]:
     top3 = [d["feature"] for d in metrics["explain"]["global_importance"][:3]]
     metrics["explain"]["pdp"] = expl.pdp(X.loc[tr], top3)
     overlaps = []
-    for cid in X.loc[te].sample(min(15, len(te)), random_state=1).index:
-        s_top = {d["feature"] for d in expl.top_drivers(X.loc[cid], expl.shap_values(X.loc[[cid]]).iloc[0], 5)}
-        l_rules = [d["rule"] for d in expl.lime_drivers(X.loc[cid], 5)]
-        overlaps.append(sum(any(f in rule for rule in l_rules) for f in s_top) / 5)
-    metrics["explain"]["shap_lime_top5_agreement"] = round(float(np.mean(overlaps)), 3)
+    if expl.lime is None:
+        log.warning("LIME is not installed; skipping the SHAP vs LIME agreement check (python -m pip install lime)")
+    else:
+        for cid in X.loc[te].sample(min(15, len(te)), random_state=1).index:
+            s_top = {d["feature"] for d in expl.top_drivers(X.loc[cid], expl.shap_values(X.loc[[cid]]).iloc[0], 5)}
+            l_rules = [d["rule"] for d in expl.lime_drivers(X.loc[cid], 5)]
+            overlaps.append(sum(any(f in rule for rule in l_rules) for f in s_top) / 5)
+    metrics["explain"]["shap_lime_top5_agreement"] = round(float(np.mean(overlaps)), 3) if overlaps else None
 
     # 10. latency of the model path -----------------------------------------------------
     lat = []

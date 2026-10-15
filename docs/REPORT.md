@@ -1,95 +1,94 @@
 # Customer Behaviour Prediction Platform: Technical Report
 
-> **Data warning.** This run used the built-in SYNTHETIC generator because `online_retail_II.xlsx` was not present. Every number below demonstrates that the pipeline works; none of them are findings about real customers. Place the UCI file in `data/raw/` and re-run `python -m src.pipeline` to regenerate this report on real data.
-
 ## 1. Summary
-- Data source: **synthetic**; 2,384 customers modelled; churn rate 54.3% (no purchase in the 90 days after 2011-09-10).
-- Production churn model: **random_forest** (selected on validation ROC-AUC) with test ROC-AUC 0.794, recall 0.696, precision 0.763, F1 0.728.
-- Segments: **4** K-Means segments (silhouette 0.254).
-- Portfolio today: 742 high-risk customers; expected spend at risk over the next 90 days about 304,179.
+- Data source: **file**; 5,257 customers modelled; churn rate 56.5% (no purchase in the 90 days after 2011-09-10).
+- Production churn model: **lightgbm** (selected on validation ROC-AUC) with test ROC-AUC 0.802, recall 0.762, precision 0.774, F1 0.768.
+- Segments: **5** K-Means segments (silhouette 0.262).
+- Portfolio today: 928 high-risk customers; expected spend at risk over the next 90 days about 936,760.
 
 ## 2. Data and cleaning
 | Step | Rows |
 |---|---|
-| raw rows | 218,831 |
-| after dedup | 217,521 |
-| invalid price rows | 335 |
-| data entry errors | 60 |
-| bulk rows flagged | 15,336 |
-| admin rows removed | 1,966 |
-| missing customer id rows | 15,899 |
-| clean rows | 215,160 |
+| raw rows | 1,067,371 |
+| after dedup | 1,033,034 |
+| invalid price rows | 6,042 |
+| data entry errors | 4 |
+| bulk rows flagged | 37,862 |
+| admin rows removed | 5,432 |
+| missing customer id rows | 227,143 |
+| clean rows | 1,021,556 |
 
-Features were built with a strict point-in-time cutoff (2011-09-10); labels use only the following 90 days. 25 of 30 columns remain after iterative VIF pruning (threshold 10.0). Dropped: `aff_other`, `country_United Kingdom`, `aff_stationery`, `monetary_total`, `monetary_avg`.
+Features were built with a strict point-in-time cutoff (2011-09-10); labels use only the following 90 days. 27 of 30 columns remain after iterative VIF pruning (threshold 10.0). Dropped: `country_United Kingdom`, `aff_other`, `monetary_total`.
 
 ## 3. Churn model comparison (test set, ranked by ROC-AUC then recall)
 Threshold per model is chosen on the validation set to keep recall at or above the target, so precision and recall are directly comparable.
 
 | Rank | Model | CV AUC (train) | Val AUC | Test AUC | Recall | Precision | F1 | Accuracy | Confusion (TN/FP/FN/TP) |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | xgboost | 0.801 | 0.837 | 0.796 | 0.717 | 0.768 | 0.741 | 0.729 | 122/42/55/139 |
-| 2 | random_forest | 0.804 | 0.837 | 0.794 | 0.696 | 0.763 | 0.728 | 0.718 | 122/42/59/135 |
-| 3 | decision_tree | 0.804 | 0.812 | 0.792 | 0.820 | 0.660 | 0.731 | 0.673 | 82/82/35/159 |
-| 4 | logistic_regression | 0.807 | 0.834 | 0.792 | 0.686 | 0.751 | 0.717 | 0.707 | 120/44/61/133 |
-| 5 | ann | n/a | 0.823 | 0.791 | 0.634 | 0.783 | 0.701 | 0.707 | 130/34/71/123 |
-| 6 | knn | 0.770 | 0.800 | 0.789 | 0.737 | 0.698 | 0.717 | 0.684 | 102/62/51/143 |
-| 7 | lightgbm | 0.791 | 0.831 | 0.788 | 0.670 | 0.783 | 0.722 | 0.721 | 128/36/64/130 |
-| 8 | lstm | n/a | 0.767 | 0.744 | 0.696 | 0.689 | 0.692 | 0.665 | 103/61/59/135 |
+| 1 | random_forest | 0.807 | 0.793 | 0.806 | 0.771 | 0.778 | 0.775 | 0.747 | 245/98/102/344 |
+| 2 | lightgbm | 0.795 | 0.796 | 0.802 | 0.762 | 0.774 | 0.768 | 0.740 | 244/99/106/340 |
+| 3 | xgboost | 0.802 | 0.795 | 0.800 | 0.767 | 0.770 | 0.768 | 0.739 | 241/102/104/342 |
+| 4 | ann | n/a | 0.789 | 0.795 | 0.782 | 0.769 | 0.776 | 0.744 | 238/105/97/349 |
+| 5 | logistic_regression | 0.802 | 0.784 | 0.791 | 0.776 | 0.790 | 0.783 | 0.757 | 251/92/100/346 |
+| 6 | knn | 0.789 | 0.772 | 0.788 | 0.773 | 0.760 | 0.767 | 0.734 | 234/109/101/345 |
+| 7 | lstm | n/a | 0.774 | 0.786 | 0.780 | 0.748 | 0.764 | 0.728 | 226/117/98/348 |
+| 8 | decision_tree | 0.778 | 0.780 | 0.775 | 0.821 | 0.732 | 0.774 | 0.729 | 209/134/80/366 |
 
 ### Recommendation
-Serve **random_forest** in the API: it had the best validation ROC-AUC among the SHAP-compatible tree models, trains in seconds and gives exact per-customer explanations. The ANN is kept as a secondary check; its residual correlation with random_forest is 0.97, so it adds limited independent information on this data. With only a few thousand customers the neural models are exercises rather than production candidates, as the PRD anticipated.
+Serve **lightgbm** in the API: it had the best validation ROC-AUC among the SHAP-compatible tree models, trains in seconds and gives exact per-customer explanations. The ANN is kept as a secondary check; its residual correlation with lightgbm is 0.98, so it adds limited independent information on this data. With only a few thousand customers the neural models are exercises rather than production candidates, as the PRD anticipated.
 
 ## 4. Lifetime value (next-90-day net spend)
-Best model (chosen on validation R2): **hurdle**. Test R2 0.451, MAE 206.1, RMSE 629.3; R2 among customers who actually bought: 0.632.
+Best model (chosen on validation R2): **hurdle**. Test R2 0.390, MAE 516.3, RMSE 4487.9; R2 among customers who actually bought: 0.381.
 
 | Model | Validation R2 | Test R2 | Test MAE | Test RMSE |
 |---|---|---|---|---|
-| ridge | 0.022 | -9.619 | 348.3 | 2767.0 |
-| xgboost_direct | 0.065 | 0.170 | 210.9 | 773.5 |
-| hurdle | 0.439 | 0.451 | 206.1 | 629.3 |
+| ridge | -256.500 | -662021038427.591 | 179606394.9 | 4674847298.9 |
+| xgboost_direct | 0.140 | 0.059 | 578.1 | 5574.3 |
+| hurdle | 0.410 | 0.390 | 516.3 | 4487.9 |
 
 Roughly half of customers spend nothing in the next 90 days, so the target is zero-inflated. The hurdle model separates 'will they buy at all' from 'how much if they do', which is why it beats a single regression. The remaining gap to the PRD target reflects genuinely unpredictable purchase timing over a short window.
 
-Next-purchase category: top-1 accuracy 0.427, top-3 0.732 (majority-class baseline 0.159, n=164).
+Next-purchase category: top-1 accuracy 0.501, top-3 0.822 (majority-class baseline 0.486, n=343).
 
 ## 5. Deep learning
-- ANN: stopped at 26 epochs (early stopping), test AUC 0.791. NumPy inference copy matches Keras within 2.0e-07.
-- LSTM on the last 12 orders: 17 epochs, test AUC 0.744.
-- Autoencoder: reconstruction-error threshold 1.8517 (training percentile 99); flag rate train/val/test = 0.010 / 0.003 / 0.017. 36 customers flagged today.
+- ANN: stopped at 21 epochs (early stopping), test AUC 0.795. NumPy inference copy matches Keras within 1.3e-07.
+- LSTM on the last 12 orders: 14 epochs, test AUC 0.786.
+- Autoencoder: reconstruction-error threshold 0.6187 (training percentile 99); flag rate train/val/test = 0.010 / 0.011 / 0.008. 90 customers flagged today.
 - Loss curves: `docs/figures/ann_loss.png`, `lstm_loss.png`, `autoencoder_loss.png`.
 
 ## 6. Segmentation
-K chosen by silhouette over 3 to 8. K-Means: silhouette 0.254, Davies-Bouldin 1.397. Gaussian mixture: silhouette 0.103, Davies-Bouldin 1.861.
+K chosen by silhouette over 3 to 8. K-Means: silhouette 0.262, Davies-Bouldin 1.171. Gaussian mixture: silhouette 0.100, Davies-Bouldin 3.066.
 
 | Segment | Customers | Share | Mean recency (d) | Mean orders | Mean spend | What to do |
 |---|---|---|---|---|---|---|
-| Dormant low-value | 1,323 | 50% | 256 | 4.6 | 340 | Inactive and low spend; low-cost reactivation only. |
-| Loyal champions | 844 | 32% | 6 | 14.8 | 1,243 | Recent, frequent, high spend; protect and reward. |
-| Steady mid-value | 279 | 11% | 143 | 8.8 | 9,074 | Regular but modest spend; upsell and cross-sell. |
-| Return-heavy buyers | 178 | 7% | 244 | 5.6 | 581 | High share of purchases sent back; investigate product fit and fulfilment. |
+| Lapsed high-value | 280 | 5% | 251 | 8.4 | 8,673 | Strong past spend but gone quiet; best win-back opportunity. |
+| Dormant low-value | 2,281 | 39% | 328 | 2.6 | 694 | Inactive and low spend; low-cost reactivation only. |
+| Seasonal gift shoppers | 1,348 | 23% | 194 | 2.0 | 541 | Orders concentrated in Oct to Dec; target with pre-season campaigns. |
+| Loyal champions | 1,888 | 32% | 41 | 13.5 | 6,346 | Recent, frequent, high spend; protect and reward. |
+| Return-heavy buyers | 56 | 1% | 272 | 3.3 | 2,038 | High share of purchases sent back; investigate product fit and fulfilment. |
 
 ## 7. Explainability
 Top global drivers (mean absolute SHAP on held-out customers):
-1. days since last purchase (0.101)
-2. engagement score (0.054)
-3. customer age in days (0.038)
-4. number of orders (0.034)
-5. order-frequency trend (0.029)
-6. share of orders in Oct to Dec (0.017)
+1. engagement score (0.257)
+2. days since last purchase (0.234)
+3. order-frequency trend (0.093)
+4. number of orders (0.079)
+5. share of spend in gifts cards (0.053)
+6. customer age in days (0.047)
 
-SHAP and LIME agree on 80% of each customer's top-5 features on a random sample, a sanity check that the two methods tell a consistent story. `docs/figures/shap_summary.png` shows the full beeswarm. Individual explanations (SHAP bars, LIME rules, plain-language narrative) are served by the API and dashboard.
+The SHAP vs LIME agreement check was skipped because LIME was not installed in this environment. `docs/figures/shap_summary.png` shows the full beeswarm. Individual explanations (SHAP bars, LIME rules, plain-language narrative) are served by the API and dashboard.
 
 ## 8. Success metrics versus PRD targets
 | Metric | Target | Result | Status |
 |---|---|---|---|
-| Churn ROC-AUC (test) | >= 0.80 | 0.794 | Not met |
-| Churn recall (test) | >= 0.70 | 0.696 | Not met |
-| CLV R2 (test, original scale) | >= 0.60 | 0.451 | Not met |
-| Single-customer prediction p95 (model + SHAP path) | < 400 ms | 76.4 ms | Met |
+| Churn ROC-AUC (test) | >= 0.80 | 0.802 | Met |
+| Churn recall (test) | >= 0.70 | 0.762 | Met |
+| CLV R2 (test, original scale) | >= 0.60 | 0.390 | Not met |
+| Single-customer prediction p95 (model + SHAP path) | < 400 ms | 126.5 ms | Met |
 | Dashboard full segment view load | < 3 s | measure in browser | Check manually |
-| Single-command reproducible pipeline | 100% | `python -m src.pipeline` (101.8s) | Met |
+| Single-command reproducible pipeline | 100% | `python -m src.pipeline` (309.8s) | Met |
 
-The test set holds 358 customers (194 churners), so ROC-AUC and recall carry sampling error of a few points. A shortfall of about 0.01 against a target is within that noise but is still reported as not met. The CLV gap is larger: the target is zero-inflated and the window is short. Whether that is irreducible has not been tested here; a longer label window or more customers are the obvious next experiments.
+The test set holds 789 customers (446 churners), so ROC-AUC and recall carry sampling error of a few points. A shortfall of about 0.01 against a target is within that noise but is still reported as not met. The CLV gap is larger: the target is zero-inflated and the window is short. Whether that is irreducible has not been tested here; a longer label window or more customers are the obvious next experiments.
 
 ## 9. Method notes and deviations from the PRD
 - SQLite replaces PostgreSQL and a React dashboard replaces Streamlit (project stack decision). Ollama adds plain-language narratives and a Q&A assistant; it never produces predictions and every feature has a deterministic fallback.

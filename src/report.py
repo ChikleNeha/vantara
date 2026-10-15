@@ -166,8 +166,12 @@ def write_report(m: dict[str, Any], cfg: Config, path: Path) -> None:
         "Top global drivers (mean absolute SHAP on held-out customers):",
         *[f"{i}. {d['label']} ({d['importance']:.3f})" for i, d in enumerate(m["explain"]["global_importance"][:6], 1)],
         "",
-        f"SHAP and LIME agree on {m['explain']['shap_lime_top5_agreement']:.0%} of each customer's top-5 features on a random sample, a sanity check that the two methods tell a consistent story. "
-        "`docs/figures/shap_summary.png` shows the full beeswarm. Individual explanations (SHAP bars, LIME rules, plain-language narrative) are served by the API and dashboard.",
+        (
+            f"SHAP and LIME agree on {m['explain']['shap_lime_top5_agreement']:.0%} of each customer's top-5 features on a random sample, a sanity check that the two methods tell a consistent story. "
+            if m["explain"].get("shap_lime_top5_agreement") is not None
+            else "The SHAP vs LIME agreement check was skipped because LIME was not installed in this environment. "
+        )
+        + "`docs/figures/shap_summary.png` shows the full beeswarm. Individual explanations (SHAP bars, LIME rules, plain-language narrative) are served by the API and dashboard.",
         "",
         "## 8. Success metrics versus PRD targets",
         "| Metric | Target | Result | Status |",

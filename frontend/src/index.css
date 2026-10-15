@@ -6,21 +6,68 @@
   html, body, #root { height: 100%; }
   body { @apply bg-paper font-sans text-ink-900 antialiased; }
   h1, h2, h3 { @apply font-display tracking-tight; }
-  ::selection { background: #f0d9a8; }
+  ::selection { background: #cfe0ff; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #d3d8ec; border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
 }
 
 @layer components {
-  .card { @apply rounded-xl border border-paper-line bg-paper-card shadow-card; }
-  .label { @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-500; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-ink-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-paper-line bg-white px-3 py-2 text-sm font-medium text-ink-900 transition hover:bg-paper; }
-  .field { @apply w-full rounded-lg border border-paper-line bg-white px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft; }
-  .th { @apply border-b border-paper-line px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-500; }
-  .td { @apply border-b border-paper-line/70 px-3 py-2.5 text-sm; }
+  .card { @apply rounded-[28px] bg-white shadow-card; }
+  .label { @apply inline-flex max-w-full items-center rounded-full bg-pastel-sky px-3.5 py-1.5 text-xs font-bold leading-snug text-ink-950; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink-950 px-5 py-2.5 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-ink-700 active:translate-y-0 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-full bg-pastel-sky px-4 py-2 text-sm font-semibold text-ink-950 transition duration-200 hover:-translate-y-0.5 hover:bg-pastel-peri/60 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0; }
+  .field { @apply w-full rounded-2xl border border-paper-line bg-white px-3.5 py-2.5 text-sm outline-none transition duration-200 focus:border-accent focus:ring-4 focus:ring-accent-soft; }
+  .th { @apply border-b border-paper-line px-3 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-ink-500; }
+  .td { @apply border-b border-paper-line/70 px-3 py-3 text-sm; }
 }
 
 .num { font-variant-numeric: tabular-nums; }
 
+/* Pastel tones taken from the reference: saturated blue, pale sky, periwinkle, soft grey */
+.tone-blue { background: #6ea8ff; }
+.tone-sky { background: #eef5ff; }
+.tone-peri { background: #a3bdff; }
+.tone-mist { background: #f3f3f5; }
+.tone-blue .label, .tone-peri .label { background: #fff; }
+.tone-sky .label, .tone-mist .label { background: #6ea8ff; }
+.tone-blue .text-ink-500, .tone-peri .text-ink-500, .tone-blue .text-ink-700, .tone-peri .text-ink-700 { color: #2a2354; }
+
+.lift { transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s; }
+.lift:hover { transform: translateY(-4px); box-shadow: 0 22px 44px -26px rgba(21, 14, 46, 0.5); }
+tbody tr { transition: background-color 0.2s; }
+
+/* Motion. fill-mode is "backwards" on purpose: a lingering end-state would block hover transforms. */
+@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes msgIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes dots { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-5px); opacity: 1; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+.page-enter { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.stagger > * { animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.12s; }
+.stagger > *:nth-child(4) { animation-delay: 0.18s; }
+.stagger > *:nth-child(5) { animation-delay: 0.24s; }
+.stagger > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger > *:nth-child(n + 7) { animation-delay: 0.36s; }
+tbody tr { animation: fade 0.4s backwards; }
+tbody tr:nth-child(2) { animation-delay: 0.04s; }
+tbody tr:nth-child(3) { animation-delay: 0.08s; }
+tbody tr:nth-child(4) { animation-delay: 0.12s; }
+tbody tr:nth-child(5) { animation-delay: 0.16s; }
+tbody tr:nth-child(n + 6) { animation-delay: 0.2s; }
+.bar-grow { transform-origin: left; animation: grow 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 0.15s backwards; }
+.msg-in { animation: msgIn 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.float { animation: float 4s ease-in-out infinite; }
+.dot { width: 7px; height: 7px; border-radius: 999px; background: #6ea8ff; animation: dots 1.1s infinite; }
+.dot:nth-child(2) { animation-delay: 0.15s; }
+.dot:nth-child(3) { animation-delay: 0.3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
 @media print {
   aside, .no-print { display: none !important; }
   main { padding: 0 !important; }

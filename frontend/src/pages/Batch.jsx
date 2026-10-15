@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { UploadCloud } from 'lucide-react'
 import { api } from '../api'
 import { Badge, ErrorBox, PageHeader, Spinner, Stat, downloadCsv, int, money, pct } from '../ui'
 import { DriverBars } from './Customer'
@@ -20,7 +21,7 @@ function WhatIf() {
     try { setRes(await api.predict(body)) } catch (x) { setErr(x.message); setRes(null) } finally { setBusy(false) }
   }
   return (
-    <div className="card p-5">
+    <div className="card p-7">
       <div className="label mb-3">What-if: score a single customer</div>
       <form onSubmit={submit} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {FIELDS.map(([k, label]) => (
@@ -63,7 +64,8 @@ export default function Batch() {
       <PageHeader title="Score new data" subtitle="Upload raw transactions (Online Retail II columns) or a table of customer summaries. Results can be downloaded as CSV or saved as PDF.">
         {res && <><button className="btn-ghost" onClick={() => downloadCsv(res.rows, 'scored_customers.csv')}>Download CSV</button><button className="btn-ghost" onClick={() => window.print()}>Save as PDF</button></>}
       </PageHeader>
-      <div onDragOver={(e) => e.preventDefault()} onDrop={onDrop} className="no-print card mb-6 flex flex-col items-center justify-center border-dashed p-8 text-center">
+      <div onDragOver={(e) => e.preventDefault()} onDrop={onDrop} className="no-print card tone-sky lift mb-6 flex flex-col items-center justify-center border-2 border-dashed border-pastel-peri p-10 text-center">
+        <UploadCloud className="float mb-3 h-10 w-10 text-accent-deep" />
         <p className="text-sm text-ink-700">Drop a CSV here, or</p>
         <button className="btn mt-3" onClick={() => input.current?.click()} disabled={busy}>Choose file</button>
         <input ref={input} type="file" accept=".csv,text/csv" hidden onChange={(e) => upload(e.target.files?.[0])} aria-label="CSV file" />

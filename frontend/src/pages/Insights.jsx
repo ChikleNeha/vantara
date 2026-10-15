@@ -14,9 +14,9 @@ export default function Insights() {
       <Async state={meta}>
         {(m) => (
           <>
-            <div className="card mb-6 overflow-x-auto p-5">
-              <div className="label mb-1">Churn models (held-out test set, ranked by ROC-AUC then recall)</div>
-              <p className="mb-3 text-xs text-ink-500">In production: <b className="text-ink-900">{m.production_model}</b> (threshold {m.threshold.toFixed(3)}), chosen on validation data. Trained {m.trained_at}.</p>
+            <div className="card mb-6 overflow-x-auto p-7">
+              <div className="label mb-1">Churn models (test set)</div>
+              <p className="mb-3 mt-2 text-xs text-ink-500">Ranked by ROC-AUC, then recall. In production: <b className="text-ink-900">{m.production_model}</b> (threshold {m.threshold.toFixed(3)}), chosen on validation data. Trained {m.trained_at}.</p>
               <table className="w-full"><thead><tr>{['Model', 'CV AUC', 'Test AUC', 'Recall', 'Precision', 'F1', 'Accuracy'].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
                 <tbody>{m.comparison_table.map((r) => (
                   <tr key={r.model} className={r.model === m.production_model ? 'bg-accent-soft/50' : ''}>
@@ -24,13 +24,13 @@ export default function Insights() {
                     <td className="td num">{f3(r.recall)}</td><td className="td num">{f3(r.precision)}</td><td className="td num">{f3(r.f1)}</td><td className="td num">{f3(r.accuracy)}</td></tr>))}</tbody></table>
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
-              <div className="card p-5">
+              <div className="card p-7">
                 <div className="label mb-3">Lifetime value (next 90 days)</div>
                 <table className="w-full"><thead><tr>{['Model', 'Val R²', 'Test R²', 'MAE'].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
                   <tbody>{Object.entries(m.clv).filter(([k]) => k !== 'best').map(([k, v]) => (
                     <tr key={k} className={k === m.clv.best ? 'bg-accent-soft/50' : ''}><td className="td">{k}{k === m.clv.best ? ' ★' : ''}</td><td className="td num">{f3(v.val_r2)}</td><td className="td num">{f3(v.raw.r2)}</td><td className="td num">{v.raw.mae.toFixed(0)}</td></tr>))}</tbody></table>
               </div>
-              <div className="card p-5">
+              <div className="card p-7">
                 <div className="label mb-3">Platform status</div>
                 <dl className="grid grid-cols-2 gap-y-2 text-sm">
                   <dt className="text-ink-500">Data source</dt><dd className="text-right capitalize">{m.data_source}</dd>
@@ -49,17 +49,17 @@ export default function Insights() {
       <Async state={glob}>
         {(g) => (
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <div className="card p-5">
+            <div className="card p-7">
               <div className="label mb-1">What matters most overall (mean |SHAP|)</div>
               {g.shap_lime_top5_agreement != null && <p className="mb-3 text-xs text-ink-500">SHAP and LIME agree on {pct(g.shap_lime_top5_agreement)} of top-5 factors per customer.</p>}
               {g.importance.slice(0, 10).map((d) => {
                 const max = g.importance[0].importance
                 return (
                   <div key={d.feature} className="mb-2"><div className="flex justify-between text-sm"><span className="capitalize">{d.label}</span><span className="num text-ink-500">{d.importance.toFixed(3)}</span></div>
-                    <div className="h-2 rounded-full bg-paper"><div className="h-full rounded-full bg-accent" style={{ width: `${(d.importance / max) * 100}%` }} /></div></div>)
+                    <div className="h-2 rounded-full bg-paper"><div className="h-full rounded-full bg-accent bar-grow" style={{ width: `${(d.importance / max) * 100}%` }} /></div></div>)
               })}
             </div>
-            <div className="card p-5">
+            <div className="card p-7">
               <div className="label mb-3">How churn risk changes with the top factors</div>
               {Object.entries(g.pdp).map(([feat, c]) => {
                 const label = g.importance.find((i) => i.feature === feat)?.label || feat

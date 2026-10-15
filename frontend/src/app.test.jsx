@@ -72,4 +72,16 @@ describe('dashboard against real API payloads', () => {
     fireEvent.click(screen.getByRole('button', { name: /How many customers are high risk/ }))
     expect(await screen.findByText(/not reachable/)).toBeTruthy()
   })
+
+  it('chat sends on Enter, shows a typing state, and New chat clears it', async () => {
+    render(<App />); nav('Ask the analyst')
+    const box = screen.getByLabelText('Question')
+    fireEvent.change(box, { target: { value: 'Who is at risk?' } })
+    fireEvent.keyDown(box, { key: 'Enter', shiftKey: false })
+    expect(await screen.findByText('Who is at risk?')).toBeTruthy()
+    expect(await screen.findByText(/not reachable/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /New chat/ }))
+    await waitFor(() => expect(screen.queryByText('Who is at risk?')).toBeNull())
+    expect(screen.getByText('What would you like to know?')).toBeTruthy()
+  })
 })

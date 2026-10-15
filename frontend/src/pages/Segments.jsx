@@ -10,25 +10,27 @@ export default function Segments() {
   const seg = useApi(() => api.segments({ country, value_tier: tier }), [country, tier])
   const pts = useApi(() => api.segmentPoints({ country, value_tier: tier }), [country, tier])
   const labels = seg.data ? seg.data.profiles.map((p) => p.label) : []
+  const TONES = ['tone-blue', 'tone-sky', 'tone-peri', 'tone-mist']
   const colorOf = (l) => SEG_COLORS[Math.max(0, labels.indexOf(l)) % SEG_COLORS.length]
 
   return (
     <>
       <PageHeader title="Customer segments" subtitle="Groups of customers who behave alike, with what each group needs from us." />
-      <div className="card no-print mb-5 flex flex-wrap gap-4 p-4">
+      <div className="card no-print mb-5 flex flex-wrap gap-4 p-6">
         <Select label="Country" value={country} onChange={setCountry} options={filters.data?.countries || []} />
         <Select label="Value tier" value={tier} onChange={setTier} options={filters.data?.value_tiers || []} />
       </div>
       <Async state={seg}>
         {(d) => (
           <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {d.profiles.map((p) => {
+            <div className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {d.profiles.map((p, i) => {
                 const live = d.live.find((l) => l.label === p.label)
                 return (
-                  <div key={p.segment_id} className="card p-4" style={{ borderTop: `3px solid ${colorOf(p.label)}` }}>
-                    <h3 className="text-lg font-semibold">{p.label}</h3>
-                    <p className="mt-1 min-h-[3.5rem] text-xs text-ink-500">{p.description}</p>
+                  <div key={p.segment_id} className="card p-6" style={{ borderTop: `3px solid ${colorOf(p.label)}` }}>
+                    <span className="label">{live ? int(live.customers) : 0} customers</span>
+                    <h3 className="mt-5 text-2xl font-bold leading-tight">{p.label}</h3>
+                    <p className="mt-3 min-h-[3.5rem] text-sm text-ink-500">{p.description}</p>
                     <dl className="num mt-3 grid grid-cols-2 gap-y-1 text-sm">
                       <dt className="text-ink-500">Customers</dt><dd className="text-right">{live ? int(live.customers) : 0}</dd>
                       <dt className="text-ink-500">Avg churn prob.</dt><dd className="text-right">{live ? pct(live.avg_churn_prob) : '—'}</dd>
@@ -41,7 +43,7 @@ export default function Segments() {
                 )
               })}
             </div>
-            <div className="card mt-6 p-5">
+            <div className="card mt-6 p-7">
               <div className="label mb-1">Segment map</div>
               <p className="mb-3 text-xs text-ink-500">Each dot is a customer, projected to two dimensions (PCA). Closer dots behave more alike.</p>
               <Async state={pts}>

@@ -7,14 +7,14 @@ Built from the PRD (`vantara_doc.docx`) on **React + TailwindCSS + FastAPI + SQL
 |---|---|
 | `src/` pipeline | Cleans transactions, builds point-in-time features, trains 6 classical + 2 neural churn models, a hurdle CLV model, an autoencoder and K-Means/GMM segments, explains with SHAP + LIME, writes SQLite and `docs/REPORT.md` |
 | `api/` FastAPI | Single and batch scoring, customer explorer, segments, revenue forecast, explanations, Ollama assistant. Swagger UI at `/docs` |
-| `frontend/` React | Overview, Segments, Risk leaderboard, Customer explorer, Score new data (CSV upload + what-if), Model insights, Ask the analyst |
+| `frontend/` React | Overview, Segments, Risk leaderboard, Customer explorer, Score new data (CSV upload + what-if), Model insights, and a chat-style Ask the analyst page. Pastel card design, page and chart animations (disabled automatically for reduced-motion users), Lucide icons |
 | Ollama | Rewrites model outputs as plain language and answers questions. It never produces a prediction; every feature falls back to templates if it is off |
 
 ## Quick start
 
 ```bash
-# 1. Python side (3.11+)
-pip install -r requirements.txt
+# 1. Python side (3.11 or 3.12; TensorFlow has no wheels for newer versions yet)
+python -m pip install -r requirements.txt      # "python -m pip" installs into the SAME Python that runs the pipeline
 python -m src.pipeline              # ~2 min; trains everything, fills data/cbp.sqlite, writes docs/REPORT.md
 uvicorn api.main:app --port 8000    # API + docs at http://localhost:8000/docs
 
@@ -27,11 +27,18 @@ ollama pull llama3.2                # or set OLLAMA_MODEL in .env
 
 Or everything with Docker: `docker compose up --build` then open http://localhost:8080 (Ollama stays on the host).
 
-### Use the real dataset
-The sandbox that built this had no internet, so the committed results come from a **synthetic generator that mimics the Online Retail II schema** (returns, guest checkouts, admin codes, zero prices, duplicates). The report says so in a banner. To use real data:
+### Data source
+Place the *Online Retail II* file from the [UCI repository](https://archive.ics.uci.edu/dataset/502/online+retail+ii) at `data/raw/online_retail_II.xlsx` (both sheets are read) and run `python -m src.pipeline`. With `data.source: auto` (default) the pipeline uses that file if present, then tries `ucimlrepo`, then falls back to a built-in **synthetic generator** that mimics the dataset's schema (returns, guest checkouts, admin codes, zero prices, duplicates). The data source is printed in `docs/REPORT.md` and shown in the dashboard; a banner appears whenever synthetic data was used. Set `DATA_SOURCE=file` (or `data.source: file`) to fail loudly instead of falling back.
 
-1. Download *Online Retail II* from the [UCI repository](https://archive.ics.uci.edu/dataset/502/online+retail+ii) and save it as `data/raw/online_retail_II.xlsx` (both sheets are read), **or** leave it and the pipeline tries `ucimlrepo` automatically.
-2. Run `python -m src.pipeline` again. `DATA_SOURCE=file` (or `config/config.yaml: data.source`) forces a source and fails loudly instead of falling back.
+`docs/REPORT.md` is **regenerated on every pipeline run** from the logged metrics, so it always describes the data you actually trained on.
+
+### Troubleshooting
+| Symptom | Fix |
+|---|---|
+| `ModuleNotFoundError: No module named 'lime'` (or `shap`, `xgboost`, ...) | The package went into a different Python than the one running the pipeline. Use `python -m pip install -r requirements.txt`, and check with `python -c "import shap, xgboost, lightgbm, tensorflow"`. LIME itself is optional: if it is missing the pipeline still finishes and skips only the SHAP-vs-LIME agreement check. |
+| TensorFlow fails to install | Use Python 3.11 or 3.12 in a fresh virtual environment. |
+| Dashboard shows "The backend isn't ready" | Run the pipeline once, then start `uvicorn api.main:app --port 8000`. |
+| Q&A page says the model is not reachable | Start Ollama and run `ollama pull llama3.2` (or set `OLLAMA_MODEL`). Everything else works without it. |
 
 ## How the modelling is kept honest
 - **No leakage:** features use rows before a cutoff date; the label (no purchase in the next 90 days) uses only the 90 days after. `tests/test_features.py` proves features are unchanged when future rows are removed or altered.
@@ -55,7 +62,7 @@ Customer record minimum: `recency_days`, `frequency`, `monetary_total`, `tenure_
 
 ## Tests and quality
 ```bash
-make test        # pytest (64 tests, 97% line coverage of src/ and api/) + vitest (6 page-render tests)
+make test        # pytest (65 tests, 97% line coverage of src/ and api/) + vitest (7 UI tests)
 make lint        # ruff check + format check, zero findings
 ```
 Backend integration tests run a small end-to-end pipeline, then exercise the API (validation, SQL-injection safety, error handling, p95 latency, Ollama-down fallback). Frontend tests render every page against **real API responses** captured from the running backend.
@@ -71,11 +78,11 @@ Backend integration tests run a small end-to-end pipeline, then exercise the API
 | Optional: CatBoost, Transformer, DBSCAN | Not built | Marked optional; listed under future work in the report |
 
 ## Known limits (read before trusting numbers)
-- **The shipped metrics are on synthetic data.** They prove the pipeline works and show the expected *shape* of results, not real customer behaviour. Re-run on the real file before drawing any business conclusion.
-- On the synthetic run, churn AUC lands near 0.80 and CLV R² near 0.45 (target 0.60). The report prints met / not met for each PRD target; nothing is rounded up.
-- The dashboard was verified with jsdom render tests plus a production build, not in a real browser, and I have not measured the "< 3 s segment view" target. `docker compose` and live Ollama calls were also not run in the build environment (Ollama is tested with a mocked server). Treat those three as unverified until you run them once.
+- **Check the data source first.** If the report banner says SYNTHETIC, the numbers only prove the pipeline works. Conclusions need a run on the real file.
+- **Targets are reported, not assumed.** `docs/REPORT.md` prints met / not met for each PRD target. On the synthetic run churn AUC was about 0.79 and CLV R² about 0.45 (target 0.60); real data will differ. The test split holds a few hundred to a few thousand customers, so differences of about 0.01 between models are within sampling noise.
+- The dashboard is covered by automated render tests against real API responses and a production build; judge the visual design and the "under 3 seconds" segment-view target in your own browser. `docker compose` and live Ollama calls were not run in the build environment (Ollama is tested with a mock server); treat those as unverified until you run them once.
 - Product categories are keyword-derived from descriptions (the dataset has none), so "next category" is coarse.
-- "Save as PDF" uses the browser's print dialog (print stylesheet hides navigation); CSV export is built in.
+- "Save as PDF" uses the browser's print dialog (print styles hide navigation); CSV export is built in.
 
 ## Layout
 ```

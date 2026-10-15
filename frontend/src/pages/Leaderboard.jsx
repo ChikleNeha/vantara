@@ -18,7 +18,7 @@ export default function Leaderboard({ openCustomer }) {
       <PageHeader title="Churn risk leaderboard" subtitle="Ranked by expected spend at risk, so valuable customers who are likely to leave appear first.">
         <button className="btn-ghost" onClick={exportAll}>Export top 200 (CSV)</button>
       </PageHeader>
-      <div className="card no-print mb-5 flex flex-wrap gap-4 p-4">
+      <div className="card no-print mb-5 flex flex-wrap gap-4 p-6">
         <Select label="Segment" value={f.segment} onChange={set('segment')} options={filters.data?.segments || []} />
         <Select label="Country" value={f.country} onChange={set('country')} options={filters.data?.countries || []} />
         <Select label="Value tier" value={f.value_tier} onChange={set('value_tier')} options={filters.data?.value_tiers || []} />

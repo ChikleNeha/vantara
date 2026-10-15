@@ -4,7 +4,7 @@ export const money = (n) => (n == null || Number.isNaN(n) ? '—' : '£' + new I
 export const pct = (n, d = 0) => (n == null ? '—' : `${(n * 100).toFixed(d)}%`)
 export const int = (n) => (n == null ? '—' : new Intl.NumberFormat('en-GB').format(Math.round(n)))
 export const RISK_COLOR = { high: '#c2432b', medium: '#d39a1c', low: '#2e7d6a' }
-export const SEG_COLORS = ['#2f5d8a', '#c2432b', '#2e7d6a', '#d39a1c', '#7a5aa6', '#3a8fa3', '#8a6d3b', '#b04a7a']
+export const SEG_COLORS = ['#4f8cff', '#ff7a59', '#2fb38a', '#f5b83d', '#8b6cf0', '#35a7c9', '#c0728a', '#6f7bb8']
 
 // Data hook: runs `fn` whenever deps change; exposes loading and error.
 export function useApi(fn, deps = []) {
@@ -25,7 +25,7 @@ export function PageHeader({ title, subtitle, children }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-3xl font-semibold text-ink-950">{title}</h1>
+        <h1 className="text-4xl font-bold text-ink-950">{title}</h1>
         {subtitle && <p className="mt-1 max-w-2xl text-sm text-ink-500">{subtitle}</p>}
       </div>
       <div className="no-print flex items-center gap-2">{children}</div>
@@ -33,13 +33,36 @@ export function PageHeader({ title, subtitle, children }) {
   )
 }
 
-export function Stat({ label, value, hint, tone }) {
+const BG = { white: 'bg-white', blue: 'tone-blue', sky: 'tone-sky', peri: 'tone-peri', mist: 'tone-mist' }
+
+// Counts a number up from 0 once it arrives; skipped for reduced-motion users and non-browser test envs.
+export function useCountUp(target, ms = 900) {
+  const [v, setV] = useState(0)
+  useEffect(() => {
+    if (target == null) return undefined
+    const still = typeof requestAnimationFrame === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+    if (still) { setV(target); return undefined }
+    let raf, start
+    const tick = (t) => {
+      start ??= t
+      const p = Math.min(1, (t - start) / ms)
+      setV(target * (1 - Math.pow(1 - p, 3)))
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [target, ms])
+  return v
+}
+
+export function Stat({ label, value, num, fmt = int, hint, tone, bg = 'white' }) {
+  const n = useCountUp(num)
   const color = tone === 'high' ? 'text-risk-high' : tone === 'low' ? 'text-risk-low' : 'text-ink-950'
   return (
-    <div className="card p-4">
-      <div className="label">{label}</div>
-      <div className={`num mt-2 font-display text-3xl font-semibold ${color}`}>{value}</div>
-      {hint && <div className="mt-1 text-xs text-ink-500">{hint}</div>}
+    <div className={`card lift p-6 ${BG[bg]}`}>
+      <span className="label">{label}</span>
+      <div className={`num mt-6 font-display text-4xl font-bold ${color}`}>{num != null ? fmt(n) : value}</div>
+      {hint && <div className="mt-2 text-sm text-ink-500">{hint}</div>}
     </div>
   )
 }
@@ -66,7 +89,7 @@ export function Async({ state, children, label }) {
 export function Select({ label, value, onChange, options, all = 'All' }) {
   return (
     <label className="block min-w-[150px]">
-      <span className="label">{label}</span>
+      <span className="text-xs font-semibold text-ink-500">{label}</span>
       <select className="field mt-1" value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">{all}</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}

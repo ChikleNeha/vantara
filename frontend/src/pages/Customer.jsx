@@ -14,7 +14,7 @@ export function DriverBars({ drivers }) {
             <div className="mb-1 flex justify-between text-sm"><span className="capitalize">{d.label}</span><span className="num text-ink-500">{d.value_text}</span></div>
             <div className="relative h-3 rounded-full bg-paper">
               <div className="absolute left-1/2 top-0 h-full w-px bg-ink-300" />
-              <div className={`absolute top-0 h-full rounded-full ${up ? 'bg-risk-high' : 'bg-risk-low'}`} style={up ? { left: '50%', width: `${w}%` } : { right: '50%', width: `${w}%` }} />
+              <div className={`bar-grow absolute top-0 h-full rounded-full ${up ? 'bg-risk-high' : 'bg-risk-low'}`} style={up ? { left: '50%', width: `${w}%`, transformOrigin: 'left' } : { right: '50%', width: `${w}%`, transformOrigin: 'right' }} />
             </div>
             <div className="mt-0.5 text-[11px] text-ink-500">{up ? 'pushes churn risk up' : 'pulls churn risk down'}</div>
           </div>
@@ -60,13 +60,13 @@ export default function Customer({ initialId = '' }) {
       <PageHeader title="Customer explorer" subtitle="Look up any customer and see why the model rates them the way it does." />
       <form onSubmit={submit} className="no-print mb-5 flex max-w-md gap-2">
         <input className="field font-mono" placeholder="Customer ID, e.g. 12345" value={input} onChange={(e) => setInput(e.target.value)} aria-label="Customer ID" inputMode="numeric" />
-        <button className="btn" disabled={busy}>Look up</button>
+        <button className="btn" disabled={busy}>Search</button>
       </form>
       {busy && <Spinner />}
       {err && <ErrorBox message={err} />}
       {p && exp && !busy && (
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="card p-5 lg:col-span-1">
+          <div className="card p-7 lg:col-span-1">
             <div className="label">Customer {p.customer_id}</div>
             <div className="mt-2 flex items-center gap-3"><span className="num font-display text-5xl font-semibold">{pct(p.churn_prob)}</span><Badge band={p.risk_band} /></div>
             <p className="mt-1 text-xs text-ink-500">chance of no purchase in the next 90 days (flag threshold {pct(detail.threshold)})</p>
@@ -84,7 +84,7 @@ export default function Customer({ initialId = '' }) {
               <dt className="text-ink-500">Unusual account</dt><dd className="text-right">{p.is_anomaly ? 'Yes' : 'No'}</dd>
             </dl>
           </div>
-          <div className="card p-5 lg:col-span-2">
+          <div className="card p-7 lg:col-span-2">
             <div className="mb-2 flex items-center justify-between">
               <div className="label">In plain language</div>
               <button className="btn-ghost no-print" onClick={askLlm} disabled={llmBusy}>{llmBusy ? 'Thinking…' : 'Rewrite with Ollama'}</button>
@@ -94,15 +94,15 @@ export default function Customer({ initialId = '' }) {
             <div className="label mb-3 mt-6">What drives this prediction (SHAP)</div>
             <DriverBars drivers={exp.drivers} />
           </div>
-          <div className="card p-5">
+          <div className="card p-7">
             <div className="label mb-3">Where they spend</div>
             {Object.keys(detail.category_affinity).length === 0 && <p className="text-sm text-ink-500">No category data.</p>}
             {Object.entries(detail.category_affinity).slice(0, 6).map(([k, v]) => (
               <div key={k} className="mb-2"><div className="flex justify-between text-sm"><span className="capitalize">{k.replace('_', ' ')}</span><span className="num text-ink-500">{pct(v)}</span></div>
-                <div className="h-2 rounded-full bg-paper"><div className="h-full rounded-full bg-accent" style={{ width: `${v * 100}%` }} /></div></div>
+                <div className="h-2 rounded-full bg-paper"><div className="h-full rounded-full bg-accent bar-grow" style={{ width: `${v * 100}%` }} /></div></div>
             ))}
           </div>
-          <div className="card p-5 lg:col-span-2">
+          <div className="card p-7 lg:col-span-2">
             <div className="mb-2 flex items-center justify-between">
               <div className="label">Cross-check with LIME</div>
               <button className="btn-ghost no-print" onClick={runLime} disabled={llmBusy}>Run LIME</button>
@@ -110,7 +110,7 @@ export default function Customer({ initialId = '' }) {
             {!lime && <p className="text-sm text-ink-500">LIME fits a small local model around this customer. If it tells the same story as SHAP, the explanation is more trustworthy.</p>}
             {lime && <ul className="space-y-1 text-sm">{lime.map((r) => <li key={r.rule} className="flex justify-between border-b border-paper-line/70 py-1"><span className="font-mono text-xs">{r.rule}</span><span className={`num ${r.weight > 0 ? 'text-risk-high' : 'text-risk-low'}`}>{r.weight > 0 ? '+' : ''}{r.weight.toFixed(3)}</span></li>)}</ul>}
           </div>
-          <div className="card overflow-x-auto p-5 lg:col-span-3">
+          <div className="card overflow-x-auto p-7 lg:col-span-3">
             <div className="label mb-3">Recent order lines</div>
             <table className="w-full"><thead><tr>{['Date', 'Invoice', 'Item', 'Category', 'Qty', 'Price', 'Total'].map((h) => <th key={h} className="th">{h}</th>)}</tr></thead>
               <tbody>{detail.recent_lines.map((l, i) => (

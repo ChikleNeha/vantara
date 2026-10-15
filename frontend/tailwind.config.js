@@ -4,17 +4,18 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['Fraunces', 'Georgia', 'serif'],
-        sans: ['"Instrument Sans"', 'system-ui', 'sans-serif'],
+        display: ['Sora', 'system-ui', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       colors: {
-        ink: { 950: '#12161d', 900: '#1b212b', 700: '#3a4351', 500: '#6b7585', 300: '#aab2bf' },
-        paper: { DEFAULT: '#f5f2ec', card: '#fffdf9', line: '#e4ded2' },
+        ink: { 950: '#150e2e', 900: '#1f1844', 700: '#4a4468', 500: '#756f92', 300: '#b9b5d0' },
+        paper: { DEFAULT: '#f5f7fd', card: '#ffffff', line: '#e6e9f4' },
+        pastel: { blue: '#6ea8ff', sky: '#eef5ff', peri: '#a3bdff', mist: '#f3f3f5' },
         risk: { high: '#c2432b', med: '#d39a1c', low: '#2e7d6a' },
-        accent: { DEFAULT: '#2f5d8a', soft: '#dde8f2' },
+        accent: { DEFAULT: '#4f8cff', soft: '#eef5ff', deep: '#1d4ed8' },
       },
-      boxShadow: { card: '0 1px 0 rgba(18,22,29,0.04), 0 8px 24px -16px rgba(18,22,29,0.25)' },
+      boxShadow: { card: '0 1px 0 rgba(21,14,46,0.03), 0 14px 32px -24px rgba(21,14,46,0.35)' },
     },
   },
   plugins: [],
